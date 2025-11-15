@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Choir Rehearsal Player</title>
+
+  <script>
+    // The list of allowed Dropbox folder hashes
+    const ALLOWED = [
+      "f1a8c37b38fac49d3fe1120993be3490"
+    ];
+    
+    // Simple SHA-256 helper
+    async function sha256(str) {
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return Array.from(new Uint8Array(buf))
+                  .map(b => b.toString(16).padStart(2, "0"))
+                  .join("");
+    }
+    
+    (async () => {
+      const qs = new URLSearchParams(location.search);
+      const folder = qs.get("folder");
+    
+      if (!folder) {
+        document.body.innerHTML = "<h2>Error: Missing ?folder= parameter</h2>";
+        return;
+      }
+    
+      // Compute hash of provided folder URL
+      const h = await sha256(folder);
+    
+      // Check against whitelist
+      if (!ALLOWED.includes(h)) {
+        document.body.innerHTML = `
+          <h2>Security Error</h2>
+          <p>This link is not authorized.</p>
+        `;
+        console.warn("Folder URL blocked:", folder, h);
+        return;
+      }
+    
+      // Load UI logic safely from your local JS
+      const script = document.createElement("script");
+      script.src = "ui.js";   // trusted local code
+      document.head.appendChild(script);
+    
+      window.DROPBOX_BASE = folder;   // pass to UI code
+    
+    })();
+  </script>
+
+</head>
+<body>
+    <div id="app">Loading choir tools…</div>
+</body>
+</html>
